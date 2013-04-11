@@ -1,0 +1,160 @@
+<!doctype html>
+<html ng-app="falseAlarmCalculators">
+  <head>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/jquery-ui.min.js"></script>
+
+    <script src="/js/angular.min.js"></script>
+    <script src="/js/angular-ui.min.js"></script>
+
+    <script src="/js/bootstrap.min.js"></script>
+
+    <script src="/js/moment.js"></script>
+
+    <script src="/js/codemirror.min.js"></script>
+    <script src="/js/javascript.js"></script>
+
+    <script src="/js/jquery.csv-0.71.js"></script>
+    <script src="/js/jquery.json-2.4.js"></script>
+
+    <style>
+      @import url(/css/bootstrap.css);
+      @import url(/css/jquery-ui.css);
+      @import url(/css/codemirror.css);
+      @import url(/css/monokai.css);
+      h1 .icon {
+        display: inline-block;
+        color: white;
+        width: 1em;
+        height: 1em;
+        background-image: url(/img/fire.svg);
+        background-color: #d33;
+        background-size: 105%;
+        border-radius:100%;
+        margin-right: 5px;
+      }
+    </style>
+
+    <script src="/calculators.js"></script>
+  </head>
+
+  <body ng-controller="MainCtrl" ng-mask>
+
+    <div class="hero-unit">
+      <h1>
+        <span class="icon"></span>False Alarm Calculators</h1>
+      <p>They're complicated. We sympathize.</p>
+    </div>
+
+    <div class="container">
+      <div class="row-fluid">
+        <div class="span6">
+
+          <h2 ng-pluralize
+            count="rules.length"
+            when="{
+            '0':   'There are NO rules.',
+            '1':   'One Rule to Ring them All.',
+            other: 'There are {} rules.'
+            }">
+          </h2>
+
+          <table ng-model="rules" class="table table-striped table-hover">
+            <tbody ui-sortable="{update: updateResults()}" ng-model="rules">
+            <tr ng-repeat="rule in rules">
+              <td>
+                <span ng-show="rule.scope=='single'">
+                  The {{rule.alarms | ordinal}} alarm in {{rule.timeCount}}
+                  {{rule.timeframe}}<span ng-pluralize count="rule.timeCount" when="{'0': 's', 'one': '', 'other': 's'}"></span>
+                </span>
+                <span ng-show="rule.scope=='all'">
+                  {{ "Any alarm after :alarms in :timeCount :timeframe" | format : rule }}
+                </span>
+                <span ng-show="rule.billAmount!=0">
+                  will be billed at <span class="text-success" ui-currency ng-model="rule.billAmount"></span>.
+                </span>
+                <span ng-show="rule.billAmount==0">
+                  will not be billed.
+                </span>
+              </td>
+              <td><button class="btn btn-link btn-mini" ng-click="removeRule($index)">
+                  <i class="icon icon-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+          </table>
+
+        </div>
+        <div class="span6">
+
+          <h2>Add a new Rule</h2>
+          <p>Rules must contain the sequence "bill" (like <em>bill</em>ing, <em>bill</em>ed, not <em>bill</em>able, etc).</p>
+
+          <form class="form-inline" ng-submit="addTextRule()">
+            <p>
+              <input type="text" class="span12" ng-model="textRule" />
+            </p>
+            <p style="text-align:right;">
+              <button type="submit" class="btn btn-success">Save</button>
+            </p>
+          </form>
+
+        </div>
+      </div>
+      <hr class="clearfix" />
+      <div class="row-fluid">
+        <div class="span12">
+          <h2>Data <small>Paste in comma-separated values (.csv)</small></h2>
+          <p>Must have columns named <code>OccupancyID</code> and <code>AlarmDateTime</code>.</p>
+          <textarea rows="10" class="span12" 
+            ng-model="csvData"
+            ui-event="{keyup: 'updateDataRowsFromCsvData()'}"
+            ></textarea>
+        </div>
+      </div>
+      <hr class="clearfix" />
+      <div class="row-fluid">
+        <div class="span12">
+          <h2>Results</h2>
+
+          <table class="table table-striped table-bordered table-hover">
+              <tr>
+                <th>Occupancy ID</th>
+                <th ng-repeat="extra in results[0].extras">
+                  {{extra.title|inflector:humanize}}
+                </th>
+                <th>Alarm</th>
+                <th>Bill</th>
+                <th>Rule</th>
+              </tr>
+              <tr ng-repeat="row in results">
+                <td>{{row.OccupancyID}}</td>
+                <td ng-repeat="extra in row.extras">
+                  {{extra.value}}
+                </td>
+                <td>{{row.AlarmDateTime.format('L')}}</td>
+                <td style="text-align:right">
+                  <span ng-class="successClass(row.billAmount)">
+                    {{row.billAmount | currency}}
+                  </span>
+                </td>
+                <td>{{row.rule}}</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td ng-repeat="extra in results[0].extras"></td>
+                <th class="success">Total:</th>
+                <th class="success" style="text-align:right">
+                  <span class="text-success">
+                    {{sum(results, "billAmount") | currency}}
+                  </span>
+                </th>
+                <td></td>
+              </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
